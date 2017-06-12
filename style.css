@@ -1,0 +1,50 @@
+#result {
+    display: block;
+    width: 400px;
+    height: 200px;
+}
+
+.p10 {
+    padding: 10px;
+}
+
+tr.group,
+tr.group:hover {
+    background-color: #ddd !important;
+}
+
+.chart rect {
+    fill: steelblue;
+}
+
+.chart rect:hover {
+    fill: slategray;
+}
+
+.chart text {
+    fill: white;
+    font: 10px sans-serif;
+    text-anchor: middle;
+}
+
+.toolTip {
+    position: absolute;
+    display: none;
+    min-width: 80px;
+    height: auto;
+    background: none repeat scroll 0 0 #d9d9d9;
+    border: 1px solid #9a9a9a;
+    padding: 14px;
+    /*text-align: center;*/
+}
+/* Style northward toolTips differently */
+
+.toolTip.n:after {
+    margin: -1px 0 0 0;
+    top: 100%;
+    left: 0;
+}
+
+tr.text-small {
+    font-size: 12px;
+}
