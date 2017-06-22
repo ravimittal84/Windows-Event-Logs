@@ -1,7 +1,7 @@
 (function () {
     $(document).ready(function () {
-        let r = [];
-        let dt, dt2;
+        let r = [], d = []; // Data Arrays
+        let dt, dt2;   // Data Table Objects
         $('#import').on('click', function () {
             $('#proc').show();
             var files = document.getElementById('selectFiles').files;
@@ -13,7 +13,8 @@
             fr.onload = function (e) {
                 const txt = e.target.filename.includes('xml') ? xml2json(parseXml(e.target.result), ' ') : e.target.result;
                 const result = JSON.parse(txt.replace(new RegExp('@SystemTime', 'g'), '_SystemTime'));
-                const d = result.Events.Event.map(rs => {
+                // assign data to d
+                d = result.Events.Event.map(rs => {
                     let ev = [];
                     ev.push(rs.System.EventRecordID);
                     ev.push(rs.System.Level);
@@ -27,8 +28,14 @@
                     return ev;
                 });
 
+                // Add data to r if "Add to existing data" is checked
+                // Otherwise assign data to r
                 r = $('#chkAdd').is(':checked') ? r.concat(d) : d;
 
+                ProcessData(r);
+
+                // If dt has been assigned a value, redraw it using the new array r
+                // Otherwise initialise the DataTable and assign it to dt
                 if (dt) {
                     $('#dt').dataTable().fnClearTable();
                     $('#dt').dataTable().fnAddData(r);
@@ -61,6 +68,8 @@
                     return arrayItem;
                 });
 
+                // If dt2 has been assigned a value, redraw it using the new array dt2Data
+                // Otherwise initialise the DataTable and assign it to dt2
                 if (dt2) {
                     $('#dtGroup').dataTable().fnClearTable();
                     $('#dtGroup').dataTable().fnAddData(dt2Data);
@@ -77,11 +86,12 @@
                     });
                 }
 
-
+                // Reset SVG for draw/redraw
                 $('svg').html('');
                 renderD3Bar(arr.slice(0, 10));
 
                 $('#proc').hide();
+                $('#main').show();
             }
 
             fr.readAsText(files.item(0));
@@ -146,6 +156,7 @@
 
 })();
 
+// Group the array by "Info" field
 function groupByInfo(r) {
     return r.reduce((rv, x) => {
         const v = x[3];
@@ -160,6 +171,7 @@ function groupByInfo(r) {
     }, []);
 };
 
+// Group the array by "Date" field
 function groupByDate(r) {
     return r.reduce((rv, x) => {
         const v = x[3];
@@ -172,4 +184,32 @@ function groupByDate(r) {
         }
         return rv;
     }, []);
+}
+
+//Populate Facts
+function ProcessData(r) {
+    var erArray = [], warnArray = [];
+    var minDate = new Date(), maxDate = new Date(1900, 1, 1);
+    r.forEach(function(el) {
+        minDate = minDate < el[4] ? minDate : el[4];
+        maxDate = maxDate > el[4] ? maxDate : el[4];
+        if(el[2] === "ERROR"){
+            erArray.push(el);
+        }
+
+        if(el[2] === "WARN"){
+            warnArray.push(el);
+        }
+    });
+
+    var totalHours = ((maxDate - minDate)  / 3600000).toFixed(2);
+
+    $('#totalEvents').text(r.length);
+    $('#totalErrors').text(erArray.length);
+    $('#totalWarning').text(warnArray.length);
+
+    $('#hourlyEvents').text((r.length / totalHours).toFixed(2));
+    $('#hourlyErrors').text((erArray.length / totalHours).toFixed(2));
+    $('#hourlyWarning').text((warnArray.length / totalHours).toFixed(2));
+
 }

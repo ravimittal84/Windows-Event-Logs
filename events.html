@@ -25,8 +25,20 @@
 		</div>
 
 		<div style="padding:20px;">
-			<div class="col-md-5" style="border: 1px solid #a9a9a9; padding: 20px;" >
-				<svg class="chart"></svg>
+			<div id="main" class="col-md-5" hidden>
+				<div class="p10" >
+					<svg class="chart"></svg>
+				</div>
+				<div class="p10">
+					Total Events: <span id="totalEvents"></span><br>
+					Total Errors: <span id="totalErrors"></span><br>
+					Total Warning: <span id="totalWarning"></span><br>
+				</div>
+				<div class="p10">
+					Events Per Hour: <span id="hourlyEvents"></span><br>
+					Errors Per Hour: <span id="hourlyErrors"></span><br>
+					Warnings Per Hour: <span id="hourlyWarning"></span><br>
+				</div>
 			</div>
 			<div class="col-md-7">
 				<table class="table table-bordered table-striped table-hover compact" id="dtGroup"></table>
