@@ -38,29 +38,6 @@
                 r = $('#chkAdd').is(':checked') ? r.concat(d) : d;
 
                 PopulateTiles(r);
-
-                // pass the new array r to dt
-                $('#dt').dataTable().fnClearTable();
-                $('#dt').dataTable().fnAddData(r);
-
-                let arr = groupByInfo(r);
-
-                let dt2Data = arr.map(a => {
-                    let arrayItem = [];
-                    arrayItem.push(a.key.substr(0, 300));
-                    arrayItem.push(a.values.length);
-                    return arrayItem;
-                });
-
-                // pass the new array dt2Data to dt2
-                $('#dtGroup').dataTable().fnClearTable();
-                $('#dtGroup').dataTable().fnAddData(dt2Data);
-
-                // Reset SVG for draw/redraw
-                renderD3Bar(arr.slice(0, 10));
-
-                $('#proc').hide();
-                $('#main').show();
             }
 
             fr.readAsText(files.item(0));
@@ -68,16 +45,15 @@
 
         $('#showAll').on("click", function (e) {
             e.preventDefault();
+            PopulateTiles(r);
             $('#showAll').hide();
-            $('#dt').dataTable().fnClearTable();
-            $('#dt').dataTable().fnAddData(r);
         });
 
         $('#filter').on("click", function (e) {
             e.preventDefault();
-            r = filterByDate(r, $('#start').val(), $('#end').val());
-            $('#dt').dataTable().fnClearTable();
-            $('#dt').dataTable().fnAddData(r);
+            const arr = filterByDate(r, $('#start').val(), $('#end').val());
+            PopulateTiles(arr);
+            $('#showAll').show();
         });
 
         $('input[type=datetime]').datetimepicker();
@@ -86,7 +62,7 @@
 
 const renderD3Bar = (data) => {
     $('svg').html('');
-    var width = 500,
+    var width = 400,
         height = 300;
 
     var y = d3.scaleLinear()
@@ -194,10 +170,10 @@ const filterByDate = (arr, startDate, endDate) => {
 };
 
 //Populate Facts
-const PopulateTiles = (arr) => {
+const PopulateTiles = (r) => {
     var erArray = [], warnArray = [];
     var minDate = new Date(), maxDate = new Date(1900, 1, 1);
-    arr.forEach(function (el) {
+    r.forEach(function (el) {
         minDate = minDate < el[4] ? minDate : el[4];
         maxDate = maxDate > el[4] ? maxDate : el[4];
         if (el[2] === "ERROR") {
@@ -211,12 +187,34 @@ const PopulateTiles = (arr) => {
 
     var totalHours = ((maxDate - minDate) / 3600000).toFixed(2);
 
-    $('#totalEvents').text(arr.length);
+    $('#totalEvents').text(r.length);
     $('#totalErrors').text(erArray.length);
     $('#totalWarning').text(warnArray.length);
 
-    $('#hourlyEvents').text((arr.length / totalHours).toFixed(2));
+    $('#hourlyEvents').text((r.length / totalHours).toFixed(2));
     $('#hourlyErrors').text((erArray.length / totalHours).toFixed(2));
     $('#hourlyWarning').text((warnArray.length / totalHours).toFixed(2));
 
+    // pass the new array r to dt
+    $('#dt').dataTable().fnClearTable();
+    $('#dt').dataTable().fnAddData(r);
+
+    let arr = groupByInfo(r);
+
+    let dt2Data = arr.map(a => {
+        let arrayItem = [];
+        arrayItem.push(a.key.substr(0, 300));
+        arrayItem.push(a.values.length);
+        return arrayItem;
+    });
+
+    // pass the new array dt2Data to dt2
+    $('#dtGroup').dataTable().fnClearTable();
+    $('#dtGroup').dataTable().fnAddData(dt2Data);
+
+    // Reset SVG for draw/redraw
+    renderD3Bar(arr.slice(0, 10));
+
+    $('#proc').hide();
+    $('#main').show();
 };
