@@ -139,8 +139,8 @@ const parseData = (arr) => {
         const info = rs.EventData.Data["#text"].split(type)[1];
         const date = new Date(rs.System.TimeCreated.SystemTime);
 
-        ev.push(rs.System.EventRecordID);
-        ev.push(rs.System.Level);
+        ev.push(rs.System.EventRecordID["#text"]);
+        ev.push(rs.System.Level["#text"]);
         ev.push(type);
         ev.push(info ? info.replace("MyAccounts.Infrastructure.Logging.Log4NetLogger: ", "") : "");
         ev.push(date);

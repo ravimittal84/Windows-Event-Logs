@@ -4,6 +4,12 @@
     height: 200px;
 }
 
+#filter {
+    position: absolute; 
+    bottom: 1px; 
+    right: 0;
+}
+
 .p10 {
     padding: 10px;
 }
