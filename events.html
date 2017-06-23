@@ -3,7 +3,6 @@
 
 <head>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css" />
-	<link rel="stylesheet" href="https://cdn.datatables.net/1.10.15/css/jquery.dataTables.min.css" />
 	<link rel="stylesheet" href="style.css" />
 </head>
 
@@ -26,6 +25,11 @@
 
 		<div style="padding:20px;">
 			<div id="main" class="col-md-5" hidden>
+				<div class="p10">
+					Start: <input id="start" type="datetime" >
+					End: <input id="end" type="datetime">
+					<button id="filter" >Filter</button>
+				</div>
 				<div class="p10" >
 					<svg class="chart"></svg>
 				</div>
@@ -55,5 +59,10 @@
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script type="text/javascript" src="xml2json.js"></script>
 <script type="text/javascript" src="script.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-datetimepicker/2.5.4/build/jquery.datetimepicker.full.min.js"></script>
+
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.15/css/jquery.dataTables.min.css" />
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-datetimepicker/2.5.4/build/jquery.datetimepicker.min.css" />
 
 </html>

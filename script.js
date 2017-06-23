@@ -11,22 +11,8 @@
             var fr = new FileReader();
             fr.filename = files[0].name;
             fr.onload = function (e) {
-                const txt = e.target.filename.includes('xml') ? xml2json(parseXml(e.target.result), ' ') : e.target.result;
-                const result = JSON.parse(txt.replace(new RegExp('@SystemTime', 'g'), '_SystemTime'));
-                // assign data to d
-                d = result.Events.Event.map(rs => {
-                    let ev = [];
-                    ev.push(rs.System.EventRecordID);
-                    ev.push(rs.System.Level);
-                    const type = rs.EventData.Data.includes("ERROR") ? "ERROR" : "WARN";
-                    ev.push(type);
-                    const info = rs.EventData.Data.split(type)[1];
-                    ev.push(info ? info.replace("MyAccounts.Infrastructure.Logging.Log4NetLogger: ", "") : "");
-                    //ev.eventData = rs.EventData.Data;
-                    const date = new Date(rs.System.TimeCreated._SystemTime);
-                    ev.push(date);
-                    return ev;
-                });
+                const txtData = e.target.filename.includes('xml') ? xml2json(parseXml(e.target.result), ' ') : e.target.result;
+                d = parseData(txtData);
 
                 // Add data to r if "Add to existing data" is checked
                 // Otherwise assign data to r
@@ -56,9 +42,8 @@
                 }
 
                 let arr = groupByInfo(r);
-                // arr = groupByArray(r, 3);
                 arr.sort((a, b) => {
-                    return b.values.length - a.values.length
+                    return b.values.length - a.values.length;
                 });
 
                 let dt2Data = arr.map(a => {
@@ -102,63 +87,87 @@
             $('#showAll').hide();
             $('#dt').dataTable().fnClearTable();
             $('#dt').dataTable().fnAddData(r);
-        })
+        });
+
+        $('#filter').on("click", function (e) {
+            e.preventDefault();
+            r = filterByDate(r, $('#start').val(), $('#end').val());
+            $('#dt').dataTable().fnClearTable();
+            $('#dt').dataTable().fnAddData(r);
+        });
+
+        $('input[type=datetime]').datetimepicker();
     });
-
-
-    function renderD3Bar(data) {
-        var width = 500,
-            height = 300;
-
-        var y = d3.scaleLinear()
-            .range([height, 0]);
-
-        var chart = d3.select("svg")
-            .attr("width", width)
-            .attr("height", height)
-            .attr("padding-left", "20px");
-
-        var tooltip = d3.select("body").append("div").attr("class", "toolTip");
-
-        y.domain([0, d3.max(data, function (d) { return d.values.length; })]);
-
-        var barWidth = width / 10; //data.length;
-
-        var bar = chart.selectAll("g")
-            .data(data)
-            .enter().append("g")
-            .attr("transform", function (d, i) { return "translate(" + i * barWidth + ",0)"; });
-
-        bar.append("rect")
-            .attr("y", function (d) { return y(d.values.length); })
-            .attr("height", function (d) { return height - y(d.values.length); })
-            .attr("width", barWidth - 1)
-            .on("click", function (d) {
-                $('#dt').dataTable().fnClearTable();
-                $('#dt').dataTable().fnAddData(d.values);
-                $('#showAll').show();
-            })
-            .on("mousemove", function (d) {
-                tooltip
-                    .style("left", d3.event.pageX - 50 + "px")
-                    .style("top", d3.event.pageY + 20 + "px")
-                    .style("display", "inline-block")
-                    .html(`Total Occurance: ${d.values.length} <br> ${d.key}...`);
-            })
-            .on("mouseout", function (d) { tooltip.style("display", "none"); });;
-
-        bar.append("text")
-            .attr("x", barWidth / 2)
-            .attr("y", function (d) { return y(d.values.length) + 3; })
-            .attr("dy", ".75em")
-            .text(function (d) { return d.values.length; });
-    }
-
 })();
 
+const renderD3Bar = (data) => {
+    var width = 500,
+        height = 300;
+
+    var y = d3.scaleLinear()
+        .range([height, 0])
+        .domain([0, d3.max(data, function (d) { return d.values.length; })]);
+
+    var chart = d3.select("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .attr("padding-left", "20px");
+
+    var tooltip = d3.select("body").append("div").attr("class", "toolTip");
+
+    var barWidth = width / 10; //data.length;
+
+    var bar = chart.selectAll("g")
+        .data(data)
+        .enter().append("g")
+        .attr("transform", function (d, i) { return "translate(" + i * barWidth + ",0)"; });
+
+    bar.append("rect")
+        .attr("y", function (d) { return y(d.values.length); })
+        .attr("height", function (d) { return height - y(d.values.length); })
+        .attr("width", barWidth - 1)
+        .on("click", function (d) {
+            $('#dt').dataTable().fnClearTable();
+            $('#dt').dataTable().fnAddData(d.values);
+            $('#showAll').show();
+        })
+        .on("mousemove", function (d) {
+            tooltip
+                .style("left", d3.event.pageX - 50 + "px")
+                .style("top", d3.event.pageY + 20 + "px")
+                .style("display", "inline-block")
+                .html(`Total Occurances: ${d.values.length} <br> ${d.key}...`);
+        })
+        .on("mouseout", function (d) { tooltip.style("display", "none"); });;
+
+    bar.append("text")
+        .attr("x", barWidth / 2)
+        .attr("y", function (d) { return y(d.values.length) + 3; })
+        .attr("dy", ".75em")
+        .text(function (d) { return d.values.length; });
+};
+
+const parseData = (txtData) => {
+    const result = JSON.parse(txtData.replace(new RegExp('@SystemTime', 'g'), '_SystemTime'));
+    return result.Events.Event.map(rs => {
+        let ev = [];
+        const type = rs.EventData.Data.includes("ERROR") ? "ERROR" : "WARN";
+        const info = rs.EventData.Data.split(type)[1];
+        const date = new Date(rs.System.TimeCreated._SystemTime);
+
+        ev.push(rs.System.EventRecordID);
+        ev.push(rs.System.Level);
+        ev.push(type);
+        ev.push(info ? info.replace("MyAccounts.Infrastructure.Logging.Log4NetLogger: ", "") : "");
+        ev.push(date);
+
+        return ev;
+    });
+};
+
 // Group the array by "Info" field
-function groupByInfo(r) {
-    return r.reduce((rv, x) => {
+const groupByInfo = (arr) => {
+    return arr.reduce((rv, x) => {
         const v = x[3];
         let el = rv.find((r) => r && r.key === v);
         if (el) {
@@ -172,9 +181,9 @@ function groupByInfo(r) {
 };
 
 // Group the array by "Date" field
-function groupByDate(r) {
-    return r.reduce((rv, x) => {
-        const v = x[3];
+const groupByDate = (arr) => {
+    return arr.reduce((rv, x) => {
+        const v = new Date(x[4]);
         let el = rv.find((r) => r && r.key === v);
         if (el) {
             el.values.push(x);
@@ -184,13 +193,22 @@ function groupByDate(r) {
         }
         return rv;
     }, []);
-}
+};
+
+const filterByDate = (arr, startDate, endDate) => {
+    return arr.filter(a => {
+        if (new Date(a[4]) > new Date(startDate) && new Date(a[4]) < new Date(endDate))
+            return true;
+
+        return false;
+    })
+};
 
 //Populate Facts
-function ProcessData(r) {
+const ProcessData = (arr) => {
     var erArray = [], warnArray = [];
     var minDate = new Date(), maxDate = new Date(1900, 1, 1);
-    r.forEach(function(el) {
+    arr.forEach(function(el) {
         minDate = minDate < el[4] ? minDate : el[4];
         maxDate = maxDate > el[4] ? maxDate : el[4];
         if(el[2] === "ERROR"){
@@ -204,12 +222,12 @@ function ProcessData(r) {
 
     var totalHours = ((maxDate - minDate)  / 3600000).toFixed(2);
 
-    $('#totalEvents').text(r.length);
+    $('#totalEvents').text(arr.length);
     $('#totalErrors').text(erArray.length);
     $('#totalWarning').text(warnArray.length);
 
-    $('#hourlyEvents').text((r.length / totalHours).toFixed(2));
+    $('#hourlyEvents').text((arr.length / totalHours).toFixed(2));
     $('#hourlyErrors').text((erArray.length / totalHours).toFixed(2));
     $('#hourlyWarning').text((warnArray.length / totalHours).toFixed(2));
 
-}
+};
