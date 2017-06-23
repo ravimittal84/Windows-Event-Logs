@@ -23,34 +23,36 @@
 			</div>
 		</div>
 
-		<div style="padding:20px;">
-			<div id="main" class="col-md-5" hidden>
-				<div class="p10">
-					Start: <input id="start" type="datetime" >
-					End: <input id="end" type="datetime">
-					<button id="filter" >Filter</button>
+		<div id="main" hidden>
+			<div style="padding:20px;">
+				<div class="col-md-5">
+					<div class="p10">
+						Start: <input id="start" type="datetime" >
+						End: <input id="end" type="datetime">
+						<button id="filter" >Filter</button>
+					</div>
+					<div class="p10" >
+						<svg class="chart"></svg>
+					</div>
+					<div class="p10">
+						Total Events: <span id="totalEvents"></span><br>
+						Total Errors: <span id="totalErrors"></span><br>
+						Total Warning: <span id="totalWarning"></span><br>
+					</div>
+					<div class="p10">
+						Events Per Hour: <span id="hourlyEvents"></span><br>
+						Errors Per Hour: <span id="hourlyErrors"></span><br>
+						Warnings Per Hour: <span id="hourlyWarning"></span><br>
+					</div>
 				</div>
-				<div class="p10" >
-					<svg class="chart"></svg>
-				</div>
-				<div class="p10">
-					Total Events: <span id="totalEvents"></span><br>
-					Total Errors: <span id="totalErrors"></span><br>
-					Total Warning: <span id="totalWarning"></span><br>
-				</div>
-				<div class="p10">
-					Events Per Hour: <span id="hourlyEvents"></span><br>
-					Errors Per Hour: <span id="hourlyErrors"></span><br>
-					Warnings Per Hour: <span id="hourlyWarning"></span><br>
+				<div class="col-md-7">
+					<table class="table table-bordered table-striped table-hover compact" id="dtGroup"></table>
 				</div>
 			</div>
-			<div class="col-md-7">
-				<table class="table table-bordered table-striped table-hover compact" id="dtGroup"></table>
-			</div>
-		</div>
 
-		<button class="btn btn-default" id="showAll" style="display:none;">Show All</button>
-		<table width="100%" class="table table-bordered compact table-striped table-hover" id="dt"></table>
+			<button class="btn btn-default" id="showAll" style="display:none;">Show All</button>
+			<table width="100%" class="table table-bordered compact table-striped table-hover" id="dt"></table>
+		</div>
 	</div>
 </body>
 

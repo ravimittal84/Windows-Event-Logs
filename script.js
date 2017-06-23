@@ -1,7 +1,26 @@
 (function () {
     $(document).ready(function () {
-        let r = [], d = []; // Data Arrays
-        let dt, dt2;   // Data Table Objects
+        let r = []; // Data Arrays
+        let dt = $('#dt').DataTable({
+            order: [[0, "asc"]],
+            dom: 'if<t>lp',
+            columns: [
+                { title: "EventID" },
+                { title: "Level" },
+                { title: "Type" },
+                { title: "Info" },
+                { title: "TimeCreated" }
+            ]
+        });
+        let dt2 = $('#dtGroup').DataTable({
+            order: [[1, "desc"]],
+            dom: 'if<t>pl',
+            columns: [
+                { title: "Info", "className": "text-small" },
+                { title: "Occurances" }
+            ]
+        });   // Data Table Objects
+
         $('#import').on('click', function () {
             $('#proc').show();
             var files = document.getElementById('selectFiles').files;
@@ -11,40 +30,20 @@
             var fr = new FileReader();
             fr.filename = files[0].name;
             fr.onload = function (e) {
-                const txtData = e.target.filename.includes('xml') ? xml2json(parseXml(e.target.result), ' ') : e.target.result;
-                d = parseData(txtData);
+                const eventsData = e.target.filename.includes('xml') ? xmlToJson($.parseXML(e.target.result), ' ') : JSON.parse(e.target.result);
+                const d = parseData(eventsData.Events.Event);
 
                 // Add data to r if "Add to existing data" is checked
                 // Otherwise assign data to r
                 r = $('#chkAdd').is(':checked') ? r.concat(d) : d;
 
-                ProcessData(r);
+                PopulateTiles(r);
 
-                // If dt has been assigned a value, redraw it using the new array r
-                // Otherwise initialise the DataTable and assign it to dt
-                if (dt) {
-                    $('#dt').dataTable().fnClearTable();
-                    $('#dt').dataTable().fnAddData(r);
-                }
-                else {
-                    dt = $('#dt').DataTable({
-                        data: r,
-                        order: [[0, "asc"]],
-                        dom: 'if<t>lp',
-                        columns: [
-                            { title: "EventID" },
-                            { title: "Level" },
-                            { title: "Type" },
-                            { title: "Info" },
-                            { title: "TimeCreated" }
-                        ]
-                    });
-                }
+                // pass the new array r to dt
+                $('#dt').dataTable().fnClearTable();
+                $('#dt').dataTable().fnAddData(r);
 
                 let arr = groupByInfo(r);
-                arr.sort((a, b) => {
-                    return b.values.length - a.values.length;
-                });
 
                 let dt2Data = arr.map(a => {
                     let arrayItem = [];
@@ -53,26 +52,11 @@
                     return arrayItem;
                 });
 
-                // If dt2 has been assigned a value, redraw it using the new array dt2Data
-                // Otherwise initialise the DataTable and assign it to dt2
-                if (dt2) {
-                    $('#dtGroup').dataTable().fnClearTable();
-                    $('#dtGroup').dataTable().fnAddData(dt2Data);
-                }
-                else {
-                    dt2 = $('#dtGroup').DataTable({
-                        data: dt2Data,
-                        order: [[1, "desc"]],
-                        dom: 'if<t>pl',
-                        columns: [
-                            { title: "Info", "className": "text-small" },
-                            { title: "Occurances" }
-                        ]
-                    });
-                }
+                // pass the new array dt2Data to dt2
+                $('#dtGroup').dataTable().fnClearTable();
+                $('#dtGroup').dataTable().fnAddData(dt2Data);
 
                 // Reset SVG for draw/redraw
-                $('svg').html('');
                 renderD3Bar(arr.slice(0, 10));
 
                 $('#proc').hide();
@@ -101,6 +85,7 @@
 })();
 
 const renderD3Bar = (data) => {
+    $('svg').html('');
     var width = 500,
         height = 300;
 
@@ -147,13 +132,12 @@ const renderD3Bar = (data) => {
         .text(function (d) { return d.values.length; });
 };
 
-const parseData = (txtData) => {
-    const result = JSON.parse(txtData.replace(new RegExp('@SystemTime', 'g'), '_SystemTime'));
-    return result.Events.Event.map(rs => {
+const parseData = (arr) => {
+    return arr.map(rs => {
         let ev = [];
-        const type = rs.EventData.Data.includes("ERROR") ? "ERROR" : "WARN";
-        const info = rs.EventData.Data.split(type)[1];
-        const date = new Date(rs.System.TimeCreated._SystemTime);
+        const type = rs.EventData.Data["#text"].includes("ERROR") ? "ERROR" : "WARN";
+        const info = rs.EventData.Data["#text"].split(type)[1];
+        const date = new Date(rs.System.TimeCreated.SystemTime);
 
         ev.push(rs.System.EventRecordID);
         ev.push(rs.System.Level);
@@ -167,7 +151,7 @@ const parseData = (txtData) => {
 
 // Group the array by "Info" field
 const groupByInfo = (arr) => {
-    return arr.reduce((rv, x) => {
+    let dat = arr.reduce((rv, x) => {
         const v = x[3];
         let el = rv.find((r) => r && r.key === v);
         if (el) {
@@ -178,6 +162,11 @@ const groupByInfo = (arr) => {
         }
         return rv;
     }, []);
+
+
+    return dat.sort((a, b) => {
+        return b.values.length - a.values.length;
+    });
 };
 
 // Group the array by "Date" field
@@ -205,22 +194,22 @@ const filterByDate = (arr, startDate, endDate) => {
 };
 
 //Populate Facts
-const ProcessData = (arr) => {
+const PopulateTiles = (arr) => {
     var erArray = [], warnArray = [];
     var minDate = new Date(), maxDate = new Date(1900, 1, 1);
-    arr.forEach(function(el) {
+    arr.forEach(function (el) {
         minDate = minDate < el[4] ? minDate : el[4];
         maxDate = maxDate > el[4] ? maxDate : el[4];
-        if(el[2] === "ERROR"){
+        if (el[2] === "ERROR") {
             erArray.push(el);
         }
 
-        if(el[2] === "WARN"){
+        if (el[2] === "WARN") {
             warnArray.push(el);
         }
     });
 
-    var totalHours = ((maxDate - minDate)  / 3600000).toFixed(2);
+    var totalHours = ((maxDate - minDate) / 3600000).toFixed(2);
 
     $('#totalEvents').text(arr.length);
     $('#totalErrors').text(erArray.length);
