@@ -1,0 +1,25 @@
+{
+  "name": "event-analyser",
+  "version": "1.0.0",
+  "description": "Dev tool to help developers analyse windows logs.",
+  "main": "events.html",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ravimittal84/Windows-Event-Logs.git"
+  },
+  "author": "Ravi Mittal",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ravimittal84/Windows-Event-Logs/issues"
+  },
+  "homepage": "https://github.com/ravimittal84/Windows-Event-Logs#readme",
+  "devDependencies": {
+    "babel-preset-es2015": "^6.24.1",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^6.1.2",
+    "gulp-uglify": "^3.0.0"
+  }
+}

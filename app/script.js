@@ -1,13 +1,12 @@
-(function () {
-    // TODO: Charts by days and hours
-
-    $(document).ready(function () {
+(() => {
+    $(document).ready(() => {
         let r = []; // Data Arrays
         let dt = $('#dt').DataTable({
             order: [[0, "asc"]],
             dom: 'if<t>lp',
             columns: [
                 { title: "EventID" },
+                { title: "Source" },
                 { title: "Level" },
                 { title: "Type" },
                 { title: "Info" },
@@ -25,15 +24,18 @@
 
         $('#import').on('click', function () {
             $('#proc').show();
-            var files = document.getElementById('selectFiles').files;
+            const files = document.getElementById('selectFiles').files;
             if (files.length < 1)
                 return false;
 
-            var fr = new FileReader();
+            let fr = new FileReader();
             fr.filename = files[0].name;
             fr.onload = function (e) {
                 const eventsData = e.target.filename.includes('xml') ? xmlToJson($.parseXML(e.target.result), ' ') : JSON.parse(e.target.result);
                 const d = parseData(eventsData.Events.Event);
+
+                // Populate Source Filter Dropdown 
+                PopulateSource(d);
 
                 // Add data to r if "Add to existing data" is checked
                 // Otherwise assign data to r
@@ -49,12 +51,14 @@
             $('#proc').show();
             e.preventDefault();
             PopulateChartsAndTables(r);
+            clearFilters();
             $('#showAll').hide();
         });
 
         $('#filter').on("click", function (e) {
             e.preventDefault();
-            const arr = filterByDate(r, $('#start').val(), $('#end').val());
+            let arr = filterByDate(r, $('#start').val(), $('#end').val());
+            arr = filterBySource(arr, $('#sourceddl').val());
             PopulateChartsAndTables(arr);
             $('#showAll').show();
         });
@@ -62,6 +66,12 @@
         $('input[type=datetime]').datetimepicker();
     });
 })();
+
+const clearFilters = () => {
+    $('#start').val(''); 
+    $('#end').val('');
+    $('#sourceddl').val('');
+}
 
 const renderD3Bar = (data) => {
     $('#c1').html('');
@@ -91,9 +101,11 @@ const renderD3Bar = (data) => {
         .attr("height", function (d) { return height - y(d.values.length); })
         .attr("width", barWidth - 1)
         .on("click", function (d) {
-            $('#dt').dataTable().fnClearTable();
-            $('#dt').dataTable().fnAddData(d.values);
+            // $('#dt').dataTable().fnClearTable();
+            // $('#dt').dataTable().fnAddData(d.values);
             $('#showAll').show();
+            tooltip.style("display", "none");
+            PopulateChartsAndTables(d.values);
         })
         .on("mousemove", function (d) {
             tooltip
@@ -138,11 +150,11 @@ const renderDailyBar = (data) => {
         .attr("y", function (d) { return y(d.values.length); })
         .attr("height", function (d) { return height - y(d.values.length); })
         .attr("width", barWidth - 1)
-        // .on("click", function (d) {
-        //     $('#dt').dataTable().fnClearTable();
-        //     $('#dt').dataTable().fnAddData(d.values);
-        //     $('#showAll').show();
-        // })
+        .on("click", function (d) {
+            $('#showAll').show();
+            tooltip.style("display", "none");
+            PopulateChartsAndTables(d.values);
+        })
         .on("mousemove", function (d) {
             tooltip
                 .style("left", d3.event.pageX - 50 + "px")
@@ -187,11 +199,11 @@ const renderHourlyBar = (data) => {
         .attr("y", function (d) { return y(d.values.length); })
         .attr("height", function (d) { return height - y(d.values.length); })
         .attr("width", barWidth - 1)
-        // .on("click", function (d) {
-        //     $('#dt').dataTable().fnClearTable();
-        //     $('#dt').dataTable().fnAddData(d.values);
-        //     $('#showAll').show();
-        // })
+        .on("click", function (d) {
+            $('#showAll').show();
+            tooltip.style("display", "none");
+            PopulateChartsAndTables(d.values);
+        })
         .on("mousemove", function (d) {
             tooltip
                 .style("left", d3.event.pageX - 50 + "px")
@@ -217,6 +229,7 @@ const parseData = (arr) => {
         const date = new Date(rs.System.TimeCreated.SystemTime);
 
         ev.push(rs.System.EventRecordID["#text"]);
+        ev.push(rs.System.Provider.Name);
         ev.push(rs.System.Level["#text"]);
         ev.push(type);
         ev.push(info ? info.replace("MyAccounts.Infrastructure.Logging.Log4NetLogger: ", "") : "");
@@ -229,7 +242,7 @@ const parseData = (arr) => {
 // Group the array by "Info" field
 const groupByInfo = (arr) => {
     let dat = arr.reduce((rv, x) => {
-        const v = x[3];
+        const v = x[4];
         let el = rv.find((r) => r && r.key === v);
         if (el) {
             el.values.push(x);
@@ -249,20 +262,20 @@ const groupByInfo = (arr) => {
 // Group the array by "Date" field
 const groupByDate = (arr) => {
     var array = _.groupBy(arr, (item) => {
-        return moment(item[4],"DD/MM/YYYY").format('DD/MM');
+        return moment(item[5], "DD/MM/YYYY").format('DD/MM');
     });
 
     var unsortedArr = $.map(array, (val, i) => {
-        return {key: i, values: val};
+        return { key: i, values: val };
     });
 
-    return unsortedArr.sort((a,b) => { return b.key < a.key});
+    return unsortedArr.sort((a, b) => { return b.key < a.key });
 };
 
 // Group the array by "Date" field
 const groupByHours = (arr) => {
     var array = _.groupBy(arr, (item) => {
-        var d = parseInt( moment(item[4],"DD/MM/YYYY").format("H"));
+        var d = parseInt(moment(item[5], "DD/MM/YYYY").format("H"));
         if (d >= 0 && d < 3) {
             return "00:00 - 02:59";
         } else if (d >= 3 && d < 6) {
@@ -283,30 +296,43 @@ const groupByHours = (arr) => {
     });
 
     var unsortedArr = $.map(array, (val, i) => {
-        return {key: i, values: val};
+        return { key: i, values: val };
     });
 
-    return unsortedArr.sort((a,b) => { return b.key < a.key});
+    return unsortedArr.sort((a, b) => { return b.key < a.key });
 };
 
 const filterByDate = (arr, startDate, endDate) => {
-    return arr.filter(a => {
-        return (new Date(a[4]) > new Date(startDate) && new Date(a[4]) < new Date(endDate));
-    })
+    const sd = moment(startDate), ed = moment(endDate);
+    if (sd.isValid() && ed.isValid()) {
+        return arr.filter(a => {
+            return (new Date(a[5]) > new Date(startDate) && new Date(a[5]) < new Date(endDate));
+        });
+    }
+    else {
+        return arr;
+    }
 };
+
+const filterBySource = (arr, sourceName) => {
+
+    return (sourceName && sourceName.length > 1) 
+        ? arr.filter(a => { return a[1] == $('#sourceddl').val() }) 
+        : arr;
+}
 
 //Populate Facts
 const PopulateChartsAndTables = (r) => {
     var erArray = [], warnArray = [];
     var minDate = new Date(), maxDate = new Date(1900, 1, 1);
     r.forEach(function (el) {
-        minDate = minDate < el[4] ? minDate : el[4];
-        maxDate = maxDate > el[4] ? maxDate : el[4];
-        if (el[2] === "ERROR") {
+        minDate = minDate < el[5] ? minDate : el[5];
+        maxDate = maxDate > el[5] ? maxDate : el[5];
+        if (el[3] === "ERROR") {
             erArray.push(el);
         }
 
-        if (el[2] === "WARN") {
+        if (el[3] === "WARN") {
             warnArray.push(el);
         }
     });
@@ -346,3 +372,11 @@ const PopulateChartsAndTables = (r) => {
     $('#proc').hide();
     $('#main').show();
 };
+
+const PopulateSource = (data) => {
+    var unique = [...new Set(data.map(item => item[1]))];
+
+    unique.forEach(function (item) {
+        $('#sourceddl').append(`<option value="${item}">${item}</option>`);
+    });
+}

@@ -24,9 +24,17 @@
 		</div>
 
 		<div id="main" hidden>
-			<div style="padding:20px;">
+			<div class="row clearfix" style="padding:20px;">
 				<div class="col-md-5">
 					<div class="p10">
+						<div class="row">
+							<div class="col-xs-12">
+								Select Source/Application: 
+								<Select id="sourceddl" class="form-control">
+									<option value="">Source Name</option>
+								</Select>
+							</div>
+						</div>
 						<div class="row" style="position: relative">
 							<div class="col-xs-5">
 								Start: <input id="start" class="form-control" type="datetime">
@@ -38,28 +46,32 @@
 						</div>
 					</div>
 					<div class="row">
-						<div class="col-xs-12">
-							<span>Top 10 Most Occured Events</span>
+						<div class="col-xs-12 tile">
+							<div>Top 10 Most Occured Events</div>
 							<svg id="c1" class="chart"></svg>
 						</div>
 					</div>
 					<div class="row">
-						<div class="col-xs-6">
-							<span>Events By Date</span>
+						<div class="col-xs-6 tile">
+							<div>Events By Date</div>
 							<svg id="c2" class="chart"></svg>
 						</div>
-						<div class="col-xs-6">
-							<span>Events By Hours</span>
+						<div class="col-xs-6 tile">
+							<div>Events By Hours</div>
 							<svg id="c3" class="chart"></svg>
 						</div>
 					</div>
-					<div class="p10">
-						Total Events: <strong id="totalEvents"></strong><br> Total Errors: <strong id="totalErrors"></strong><br> Total Warning:
-						<strong id="totalWarning"></strong><br>
-					</div>
-					<div class="p10">
-						Events Per Hour: <strong id="hourlyEvents"></strong><br> Errors Per Hour: <strong id="hourlyErrors"></strong><br> Warnings
-						Per Hour: <strong id="hourlyWarning"></strong><br>
+					<div class="row">
+						<div class="col-xs-6 tile">
+							Total Events: <strong id="totalEvents"></strong><br> 
+							Total Errors: <strong id="totalErrors"></strong><br> 
+							Total Warning: <strong id="totalWarning"></strong><br>
+						</div>
+						<div class="col-xs-6 tile">
+							Events Per Hour: <strong id="hourlyEvents"></strong><br> 
+							Errors Per Hour: <strong id="hourlyErrors"></strong><br> 
+							Warnings Per Hour: <strong id="hourlyWarning"></strong><br>
+						</div>
 					</div>
 				</div>
 				<div class="col-md-7">
