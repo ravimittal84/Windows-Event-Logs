@@ -1,74 +1,97 @@
-(() => {
-    $(document).ready(() => {
-        let r = []; // Data Arrays
-        let dt = $('#dt').DataTable({
-            order: [[0, "asc"]],
-            dom: 'if<t>lp',
-            columns: [
-                { title: "EventID" },
-                { title: "Source" },
-                { title: "Level" },
-                { title: "Type" },
-                { title: "Info" },
-                { title: "TimeCreated" }
-            ]
-        });
-        let dt2 = $('#dtGroup').DataTable({
-            order: [[1, "desc"]],
-            dom: 'if<t>pl',
-            columns: [
-                { title: "Info", "className": "text-small" },
-                { title: "Occurances" }
-            ]
-        });   // Data Table Objects
-
-        $('#import').on('click', function () {
-            $('#proc').show();
-            const files = document.getElementById('selectFiles').files;
-            if (files.length < 1)
-                return false;
-
-            let fr = new FileReader();
-            fr.filename = files[0].name;
-            fr.onload = function (e) {
-                const eventsData = e.target.filename.includes('xml') ? xmlToJson($.parseXML(e.target.result), ' ') : JSON.parse(e.target.result);
-                const d = parseData(eventsData.Events.Event);
-
-                // Populate Source Filter Dropdown 
-                PopulateSource(d);
-
-                // Add data to r if "Add to existing data" is checked
-                // Otherwise assign data to r
-                r = $('#chkAdd').is(':checked') ? r.concat(d) : d;
-
-                PopulateChartsAndTables(r);
-            }
-
-            fr.readAsText(files.item(0));
-        });
-
-        $('#showAll').on("click", function (e) {
-            $('#proc').show();
-            e.preventDefault();
-            PopulateChartsAndTables(r);
-            clearFilters();
-            $('#showAll').hide();
-        });
-
-        $('#filter').on("click", function (e) {
-            e.preventDefault();
-            let arr = filterByDate(r, $('#start').val(), $('#end').val());
-            arr = filterBySource(arr, $('#sourceddl').val());
-            PopulateChartsAndTables(arr);
-            $('#showAll').show();
-        });
-
-        $('input[type=datetime]').datetimepicker();
+$(document).ready(() => {
+    let r = []; // Data Arrays
+    let dt = $('#dt').DataTable({
+        order: [[0, "asc"]],
+        dom: 'if<t>lp',
+        columns: [
+            { title: "EventID" },
+            { title: "Source" },
+            { title: "Level" },
+            { title: "Type" },
+            { title: "Info" },
+            { title: "TimeCreated" }
+        ]
     });
-})();
+    let dt2 = $('#dtGroup').DataTable({
+        order: [[1, "desc"]],
+        dom: 'if<t>pl',
+        columns: [
+            { title: "Info", "className": "text-small" },
+            { title: "Occurances" }
+        ]
+    });   // Data Table Objects
+
+
+    $('#selectFiles').on("change", function (e) {
+        var ext = this.value.match(/\.([^\.]+)$/)[1];
+        switch (ext) {
+            case 'xml':
+            case 'json':
+                break;
+            default:
+                alert('Only xml and json files can be imported.');
+                this.value = '';
+        }
+    });
+
+    $('#fuzzy').on("click", () => {
+        $('#proc').show();
+        setTimeout(() => {
+            PopulateChartsAndTables(r, true);
+        }, 1);
+    });
+
+    $('#import').on('click', function () {
+        $('#proc').show();
+        const files = document.getElementById('selectFiles').files;
+        if (files.length < 1) {
+            $('#proc').hide();
+            return false;
+        }
+
+        let fr = new FileReader();
+        fr.filename = files[0].name;
+        fr.onload = function (e) {
+            const eventsData = e.target.filename.includes('xml') ? xmlToJson($.parseXML(e.target.result), ' ') : JSON.parse(e.target.result);
+            const d = parseData(eventsData.Events.Event);
+
+            // Populate Source Filter Dropdown 
+            PopulateSource(d);
+
+            // Add data to r if "Add to existing data" is checked
+            // Otherwise assign data to r
+            r = $('#chkAdd').is(':checked') ? r.concat(d) : d;
+
+            PopulateChartsAndTables(r);
+        }
+
+        fr.readAsText(files.item(0));
+    });
+
+    $('#showAll').on("click", function (e) {
+        $('#proc').show();
+        e.preventDefault();
+        clearFilters();
+        setTimeout(() => {
+            PopulateChartsAndTables(r);
+            $('#showAll').hide();
+        }, 1);
+    });
+
+    $('#filter').on("click", function (e) {
+        e.preventDefault();
+        let arr = filterByDate(r, $('#start').val(), $('#end').val());
+        arr = filterBySource(arr, $('#sourceddl').val());
+        PopulateChartsAndTables(arr);
+        $('#showAll').show();
+    });
+
+    $('input[type=datetime]').datetimepicker();
+});
+
 
 const clearFilters = () => {
-    $('#start').val(''); 
+    $('#start').val('');
     $('#end').val('');
     $('#sourceddl').val('');
 }
@@ -225,14 +248,21 @@ const parseData = (arr) => {
     return arr.map(rs => {
         let ev = [];
         const type = rs.EventData.Data["#text"].includes("ERROR") ? "ERROR" : "WARN";
-        const info = rs.EventData.Data["#text"].split(type)[1];
+        let info = rs.EventData.Data["#text"].split(type)[1];
+        if (info) {
+            const infoArray = info.split("Infrastructure.Logging.Log4NetLogger: ");
+            info = infoArray.length > 1 ? infoArray[1] : rs.EventData.Data["#text"].split(type)[1];
+        } else {
+            info = "";
+        }
+
         const date = new Date(rs.System.TimeCreated.SystemTime);
 
         ev.push(rs.System.EventRecordID["#text"]);
         ev.push(rs.System.Provider.Name);
         ev.push(rs.System.Level["#text"]);
         ev.push(type);
-        ev.push(info ? info.replace("MyAccounts.Infrastructure.Logging.Log4NetLogger: ", "") : "");
+        ev.push(info);
         ev.push(date);
 
         return ev;
@@ -240,10 +270,17 @@ const parseData = (arr) => {
 };
 
 // Group the array by "Info" field
-const groupByInfo = (arr) => {
+const groupByInfo = (arr, applyGrouping) => {
     let dat = arr.reduce((rv, x) => {
-        const v = x[4];
-        let el = rv.find((r) => r && r.key === v);
+        const v = x[4]; //index of info is 4 in the array
+        let el;
+        if (applyGrouping) {
+            el = rv.find((r) => r && compareTwoStrings(r.key, v) > 0.9);
+        }
+        else {
+            el = rv.find((r) => r && r.key === v);
+        }
+        
         if (el) {
             el.values.push(x);
         }
@@ -316,13 +353,13 @@ const filterByDate = (arr, startDate, endDate) => {
 
 const filterBySource = (arr, sourceName) => {
 
-    return (sourceName && sourceName.length > 1) 
-        ? arr.filter(a => { return a[1] == $('#sourceddl').val() }) 
+    return (sourceName && sourceName.length > 1)
+        ? arr.filter(a => { return a[1] == $('#sourceddl').val() })
         : arr;
 }
 
 //Populate Facts
-const PopulateChartsAndTables = (r) => {
+const PopulateChartsAndTables = (r, applyGrouping = false) => {
     var erArray = [], warnArray = [];
     var minDate = new Date(), maxDate = new Date(1900, 1, 1);
     r.forEach(function (el) {
@@ -351,11 +388,11 @@ const PopulateChartsAndTables = (r) => {
     $('#dt').dataTable().fnClearTable();
     $('#dt').dataTable().fnAddData(r);
 
-    let arr = groupByInfo(r);
+    let arr = groupByInfo(r, applyGrouping);
 
     let dt2Data = arr.map(a => {
         let arrayItem = [];
-        arrayItem.push(a.key.substr(0, 300));
+        arrayItem.push(a.key.substr(0, 500));
         arrayItem.push(a.values.length);
         return arrayItem;
     });
@@ -377,6 +414,8 @@ const PopulateSource = (data) => {
     var unique = [...new Set(data.map(item => item[1]))];
 
     unique.forEach(function (item) {
-        $('#sourceddl').append(`<option value="${item}">${item}</option>`);
+        if (!$(`#sourceddl option[value=${item}]`).length) {
+            $('#sourceddl').append(`<option value="${item}">${item}</option>`);
+        }
     });
 }

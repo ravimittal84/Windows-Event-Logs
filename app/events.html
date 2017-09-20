@@ -10,13 +10,14 @@
 	<div class="container-fluid">
 		<div class="row p10">
 			<div class="col-xs-6">
-				<input class="btn btn-default" type="file" id="selectFiles" style="width: 100%" />
+				<input class="btn btn-default" type="file" accept=".xml,.json" id="selectFiles" style="width: 100%" />
 			</div>
 			<div class="col-xs-6">
-				<label>
-				<input id="chkAdd" type="checkbox" /> Add to existing data?
-			</label>
+				<label class="col-xs-6">
+					<input id="chkAdd" type="checkbox" /> Add to existing data?
+				</label>
 				<button class="btn btn-success" id="import">Import</button>
+				<button class="btn btn-default" id="fuzzy" title="Advanced grouping ignores minor differences in the Info. It should only be applied on small datasets and should be applied once all the files have been imported.">Advanced Grouping</button>
 			</div>
 			<div class="col-xs-12" id="proc" hidden>
 				Processing...
@@ -29,7 +30,7 @@
 					<div class="p10">
 						<div class="row">
 							<div class="col-xs-12">
-								Select Source/Application: 
+								Select Source/Application:
 								<Select id="sourceddl" class="form-control">
 									<option value="">Source Name</option>
 								</Select>
@@ -63,14 +64,11 @@
 					</div>
 					<div class="row">
 						<div class="col-xs-6 tile">
-							Total Events: <strong id="totalEvents"></strong><br> 
-							Total Errors: <strong id="totalErrors"></strong><br> 
-							Total Warning: <strong id="totalWarning"></strong><br>
+							Total Events: <strong id="totalEvents"></strong><br> Total Errors: <strong id="totalErrors"></strong><br> Total Warning:
+							<strong id="totalWarning"></strong><br>
 						</div>
 						<div class="col-xs-6 tile">
-							Events Per Hour: <strong id="hourlyEvents"></strong><br> 
-							Errors Per Hour: <strong id="hourlyErrors"></strong><br> 
-							Warnings Per Hour: <strong id="hourlyWarning"></strong><br>
+							Events Per Hour: <strong id="hourlyEvents"></strong><br> Errors Per Hour: <strong id="hourlyErrors"></strong><br>							Warnings Per Hour: <strong id="hourlyWarning"></strong><br>
 						</div>
 					</div>
 				</div>
@@ -92,8 +90,9 @@
 
 <script src="scripts/d3.v4.min.js"></script>
 <script src="scripts/jquery.datetimepicker.full.min.js"></script>
-<script src="scripts/underscore-min.js"></script>
+<script src="scripts/lodash.min.js"></script>
 <script src="scripts/moment.min.js"></script>
+<script src="scripts/stringsimilarity.js"></script>
 
 
 <link rel="stylesheet" href="styles/jquery.dataTables.min.css" />
